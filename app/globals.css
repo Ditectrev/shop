@@ -11,6 +11,23 @@
   ::file-selector-button {
     border-color: var(--color-gray-200, currentColor);
   }
+
+  body {
+    font-family: var(--font-lora), serif;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-philosopher), sans-serif;
+  }
+
+  button {
+    font-family: var(--font-philosopher), sans-serif;
+  }
 }
 
 @media (prefers-color-scheme: dark) {
