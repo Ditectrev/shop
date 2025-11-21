@@ -42,11 +42,7 @@ export default async function RootLayout({
   children: ReactNode;
 }) {
   // Don't await the fetch, pass the Promise to the context provider
-  // Wrap in a catch to ensure the promise never rejects
-  const cart = getCart().catch((error) => {
-    console.error('Error fetching cart:', error);
-    return undefined;
-  });
+  const cart = getCart();
 
   return (
     <html lang="en" className={`${philosopher.variable} ${lora.variable}`}>
