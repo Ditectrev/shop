@@ -2,11 +2,11 @@
 
 import { TAGS } from 'lib/constants';
 import {
-    addToCart,
-    createCart,
-    getCart,
-    removeFromCart,
-    updateCart
+  addToCart,
+  createCart,
+  getCart,
+  removeFromCart,
+  updateCart
 } from 'lib/shopify';
 import { revalidateTag } from 'next/cache';
 import { cookies } from 'next/headers';
@@ -99,21 +99,26 @@ export async function updateItemQuantity(
  * Ensures checkout always redirects to Shopify (myshopify.com). When your storefront
  * uses a custom domain (e.g. shop.ditectrev.com) as Shopify's primary domain, the
  * API returns checkout URLs with that domain. But the custom domain points to Vercel,
- * so those URLs would 404. We replace the host with SHOPIFY_STORE_DOMAIN so checkout
+ * so those URLs would 404. We replace the host with the Shopify domain so checkout
  * always goes to Shopify.
  *
- * Optional SHOPIFY_CHECKOUT_DOMAIN: When set, use this domain for checkout instead
- * of myshopify.com (e.g. checkout.ditectrev.com). Must point to Shopify via CNAME.
+ * Uses SHOPIFY_STORE_DOMAIN (e.g. ditectrev.myshopify.com) or SHOPIFY_STORE_SUBDOMAIN
+ * (e.g. ditectrev) as fallback to construct the redirect URL.
  */
 function getCheckoutUrl(checkoutUrl: string): string {
-  const shopifyDomain = process.env.SHOPIFY_STORE_DOMAIN?.replace(/^https?:\/\//, '').split('/')[0];
+  let shopifyHost = process.env.SHOPIFY_STORE_DOMAIN?.replace(/^https?:\/\//, '').split('/')[0];
+  // Reject placeholder values
+  if (!shopifyHost || shopifyHost.includes('[') || shopifyHost.includes(']')) {
+    const subdomain = process.env.SHOPIFY_STORE_SUBDOMAIN;
+    shopifyHost = subdomain ? `${subdomain}.myshopify.com` : undefined;
+  }
   const customCheckoutDomain = process.env.SHOPIFY_CHECKOUT_DOMAIN?.replace(/^https?:\/\//, '').split('/')[0];
+  const targetHost = customCheckoutDomain || shopifyHost;
 
-  if (!shopifyDomain) return checkoutUrl;
+  if (!targetHost) return checkoutUrl;
 
   try {
     const url = new URL(checkoutUrl);
-    const targetHost = customCheckoutDomain || shopifyDomain;
     // If checkout URL points to a non-Shopify host (e.g. custom storefront domain),
     // replace with Shopify so checkout actually works
     if (!url.hostname.endsWith('.myshopify.com') || customCheckoutDomain) {
