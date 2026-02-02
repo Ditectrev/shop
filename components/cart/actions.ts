@@ -2,11 +2,11 @@
 
 import { TAGS } from 'lib/constants';
 import {
-  addToCart,
-  createCart,
-  getCart,
-  removeFromCart,
-  updateCart
+    addToCart,
+    createCart,
+    getCart,
+    removeFromCart,
+    updateCart
 } from 'lib/shopify';
 import { revalidateTag } from 'next/cache';
 import { cookies } from 'next/headers';
@@ -123,6 +123,12 @@ function getCheckoutUrl(checkoutUrl: string): string {
     // replace with Shopify so checkout actually works
     if (!url.hostname.endsWith('.myshopify.com') || customCheckoutDomain) {
       url.host = targetHost;
+      url.protocol = 'https:';
+      return url.toString();
+    }
+    // Ensure HTTPS for security
+    if (url.protocol === 'http:') {
+      url.protocol = 'https:';
       return url.toString();
     }
     return checkoutUrl;
