@@ -2,11 +2,11 @@
 
 import { TAGS } from 'lib/constants';
 import {
-    addToCart,
-    createCart,
-    getCart,
-    removeFromCart,
-    updateCart
+  addToCart,
+  createCart,
+  getCart,
+  removeFromCart,
+  updateCart
 } from 'lib/shopify';
 import { revalidateTag } from 'next/cache';
 import { cookies } from 'next/headers';
@@ -112,26 +112,20 @@ function getCheckoutUrl(checkoutUrl: string): string {
     const subdomain = process.env.SHOPIFY_STORE_SUBDOMAIN;
     shopifyHost = subdomain ? `${subdomain}.myshopify.com` : undefined;
   }
-  const customCheckoutDomain = process.env.SHOPIFY_CHECKOUT_DOMAIN?.replace(/^https?:\/\//, '').split('/')[0];
-  const targetHost = customCheckoutDomain || shopifyHost;
-
-  if (!targetHost) return checkoutUrl;
+  if (!shopifyHost) return checkoutUrl;
 
   try {
     const url = new URL(checkoutUrl);
-    // If checkout URL points to a non-Shopify host (e.g. custom storefront domain),
-    // replace with Shopify so checkout actually works
-    if (!url.hostname.endsWith('.myshopify.com') || customCheckoutDomain) {
-      url.host = targetHost;
-      url.protocol = 'https:';
-      return url.toString();
+    const currentHost = url.hostname.toLowerCase();
+    const desiredHost = shopifyHost.toLowerCase();
+    // Replace host when: (1) URL is on custom domain (would 404), or
+    // (2) URL is on a different myshopify subdomain (e.g. 122d98.myshopify.com)
+    // and we want the nicer one (e.g. ditectrev.myshopify.com)
+    if (currentHost !== desiredHost) {
+      url.host = desiredHost;
     }
-    // Ensure HTTPS for security
-    if (url.protocol === 'http:') {
-      url.protocol = 'https:';
-      return url.toString();
-    }
-    return checkoutUrl;
+    url.protocol = 'https:';
+    return url.toString();
   } catch {
     return checkoutUrl;
   }
