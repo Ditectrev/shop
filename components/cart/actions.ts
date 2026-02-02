@@ -105,19 +105,18 @@ export async function updateItemQuantity(
  * when the API uses 122d98.myshopify.com). Otherwise uses SHOPIFY_STORE_DOMAIN.
  */
 function getCheckoutUrl(checkoutUrl: string): string {
-  const checkoutDomain = process.env.SHOPIFY_CHECKOUT_DOMAIN?.replace(/^https?:\/\//, '').split('/')[0];
-  let shopifyHost = process.env.SHOPIFY_STORE_DOMAIN?.replace(/^https?:\/\//, '').split('/')[0];
-  if (!shopifyHost || shopifyHost.includes('[') || shopifyHost.includes(']')) shopifyHost = undefined;
-  const targetHost = checkoutDomain || shopifyHost;
+  const parseHost = (val: string | undefined) => {
+    if (!val || typeof val !== 'string') return undefined;
+    const host = val.replace(/^https?:\/\//, '').split('/')[0]?.trim();
+    return host && !host.includes('[') && !host.includes(']') ? host : undefined;
+  };
+  const targetHost = parseHost(process.env.SHOPIFY_CHECKOUT_DOMAIN) || parseHost(process.env.SHOPIFY_STORE_DOMAIN);
   if (!targetHost) return checkoutUrl;
 
   try {
     const url = new URL(checkoutUrl);
     const currentHost = url.hostname.toLowerCase();
     const desiredHost = targetHost.toLowerCase();
-    // Replace host when: (1) URL is on custom domain (would 404), or
-    // (2) URL is on a different myshopify subdomain (e.g. 122d98.myshopify.com)
-    // and we want the nicer one (e.g. ditectrev.myshopify.com)
     if (currentHost !== desiredHost) {
       url.host = desiredHost;
     }
