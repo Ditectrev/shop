@@ -99,26 +99,18 @@ export async function updateItemQuantity(
  * Ensures checkout always redirects to Shopify (myshopify.com). When your storefront
  * uses a custom domain (e.g. shop.ditectrev.com) as Shopify's primary domain, the
  * API returns checkout URLs with that domain. But the custom domain points to Vercel,
- * so those URLs would 404. We replace the host so checkout always goes to Shopify.
- *
- * Uses SHOPIFY_CHECKOUT_DOMAIN when set (e.g. ditectrev.myshopify.com for nicer URLs
- * when the API uses 122d98.myshopify.com). Otherwise uses SHOPIFY_STORE_DOMAIN.
+ * so those URLs would 404. We replace the host with SHOPIFY_STORE_DOMAIN so checkout
+ * always goes to Shopify.
  */
 function getCheckoutUrl(checkoutUrl: string): string {
-  const parseHost = (val: string | undefined) => {
-    if (!val || typeof val !== 'string') return undefined;
-    const host = val.replace(/^https?:\/\//, '').split('/')[0]?.trim();
-    return host && !host.includes('[') && !host.includes(']') ? host : undefined;
-  };
-  const targetHost = parseHost(process.env.SHOPIFY_CHECKOUT_DOMAIN) || parseHost(process.env.SHOPIFY_STORE_DOMAIN);
-  if (!targetHost) return checkoutUrl;
+  const shopifyHost = process.env.SHOPIFY_STORE_DOMAIN?.replace(/^https?:\/\//, '').split('/')[0];
+  if (!shopifyHost || shopifyHost.includes('[') || shopifyHost.includes(']')) return checkoutUrl;
 
   try {
     const url = new URL(checkoutUrl);
-    const currentHost = url.hostname.toLowerCase();
-    const desiredHost = targetHost.toLowerCase();
-    if (currentHost !== desiredHost) {
-      url.host = desiredHost;
+    // Only replace when URL points to custom domain (would 404 on Vercel)
+    if (!url.hostname.endsWith('.myshopify.com')) {
+      url.host = shopifyHost;
     }
     url.protocol = 'https:';
     return url.toString();
