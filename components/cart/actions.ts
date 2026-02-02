@@ -2,11 +2,11 @@
 
 import { TAGS } from 'lib/constants';
 import {
-  addToCart,
-  createCart,
-  getCart,
-  removeFromCart,
-  updateCart
+    addToCart,
+    createCart,
+    getCart,
+    removeFromCart,
+    updateCart
 } from 'lib/shopify';
 import { revalidateTag } from 'next/cache';
 import { cookies } from 'next/headers';
@@ -95,9 +95,41 @@ export async function updateItemQuantity(
   }
 }
 
+/**
+ * Ensures checkout always redirects to Shopify (myshopify.com). When your storefront
+ * uses a custom domain (e.g. shop.ditectrev.com) as Shopify's primary domain, the
+ * API returns checkout URLs with that domain. But the custom domain points to Vercel,
+ * so those URLs would 404. We replace the host with SHOPIFY_STORE_DOMAIN so checkout
+ * always goes to Shopify.
+ *
+ * Optional SHOPIFY_CHECKOUT_DOMAIN: When set, use this domain for checkout instead
+ * of myshopify.com (e.g. checkout.ditectrev.com). Must point to Shopify via CNAME.
+ */
+function getCheckoutUrl(checkoutUrl: string): string {
+  const shopifyDomain = process.env.SHOPIFY_STORE_DOMAIN?.replace(/^https?:\/\//, '').split('/')[0];
+  const customCheckoutDomain = process.env.SHOPIFY_CHECKOUT_DOMAIN?.replace(/^https?:\/\//, '').split('/')[0];
+
+  if (!shopifyDomain) return checkoutUrl;
+
+  try {
+    const url = new URL(checkoutUrl);
+    const targetHost = customCheckoutDomain || shopifyDomain;
+    // If checkout URL points to a non-Shopify host (e.g. custom storefront domain),
+    // replace with Shopify so checkout actually works
+    if (!url.hostname.endsWith('.myshopify.com') || customCheckoutDomain) {
+      url.host = targetHost;
+      return url.toString();
+    }
+    return checkoutUrl;
+  } catch {
+    return checkoutUrl;
+  }
+}
+
 export async function redirectToCheckout() {
-  let cart = await getCart();
-  redirect(cart!.checkoutUrl);
+  const cart = await getCart();
+  if (!cart) throw new Error('Cart not found');
+  redirect(getCheckoutUrl(cart.checkoutUrl));
 }
 
 export async function createCartAndSetCookie() {
