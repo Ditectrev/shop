@@ -15,6 +15,11 @@ export default {
         source: '/cart/c/:path*',
         destination: `https://${shopifyHost}/cart/c/:path*`,
         permanent: false
+      },
+      {
+        source: '/a/downloads/:path*',
+        destination: `https://${shopifyHost}/a/downloads/:path*`,
+        permanent: false
       }
     ];
   },
